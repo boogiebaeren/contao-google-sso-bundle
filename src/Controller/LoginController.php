@@ -60,8 +60,8 @@ class LoginController extends AbstractController
         $client->setClientSecret($_ENV['GOOGLE_SSO_CLIENTSECRET']);
         $client->setRedirectUri($this->generateUrl('login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
         $response_token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
-        if (!in_array('access_token', $response_token) && !in_array('refresh_token', $response_token)) {
-            throw new \Exception(sprintf("No access token or refresh token available %s", json_encode($response_token)));
+        if (!in_array('access_token', $response_token)) {
+            throw new \Exception(sprintf("No access token token available %s", json_encode($response_token)));
         }
 
         $client->setAccessToken($response_token);
