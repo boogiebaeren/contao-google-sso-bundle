@@ -33,7 +33,7 @@ class LoginController extends AbstractController
         $client = new Client();
         $client->setClientId($_ENV['GOOGLE_SSO_CLIENTID']);
         $client->setClientSecret($_ENV['GOOGLE_SSO_CLIENTSECRET']);
-        $client->addScope(Oauth2::USERINFO_EMAIL);
+        $client->addScope([Oauth2::USERINFO_EMAIL, Oauth2::USERINFO_PROFILE]);
         $client->setRedirectUri($this->generateUrl('login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
         // offline access will give you both an access and refresh token so that
         // your app can refresh the access token without user interaction.
@@ -93,7 +93,7 @@ class LoginController extends AbstractController
             $logger->log(
               LogLevel::INFO,
               'User "'. $userinfo->email. '" was not found in the database',
-              ['contao' => new ContaoContext(__METHOD__, TL_ACCESS)]
+              ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
             );
             $databaseConnection->createQueryBuilder()
               ->insert("tl_user")
@@ -110,7 +110,7 @@ class LoginController extends AbstractController
                   2 => $userinfo->name,
                   3 => $userinfo->getLocale(),
                   4 => $userinfo->email,
-                  5 => $userinfo->getEmail()
+                  5 => $userinfo->email
               ])->executeStatement();
         } else {
             $databaseConnection->createQueryBuilder()
@@ -152,7 +152,7 @@ class LoginController extends AbstractController
         $logger->log(
           LogLevel::INFO,
           'User "' . $userinfo->email . '" was logged in automatically',
-          ['contao' => new ContaoContext(__METHOD__, TL_ACCESS)]
+          ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
         );
 
         return new Response("Success!!!");
