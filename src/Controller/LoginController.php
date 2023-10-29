@@ -40,7 +40,7 @@ class LoginController extends AbstractController
         $client->setAccessType('offline');
         $client->setPrompt('select_account');
         $auth_url = $client->createAuthUrl();
-        $this->redirect($auth_url);
+        return $this->redirect($auth_url);
     }
 
     /**
