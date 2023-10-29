@@ -1,0 +1,60 @@
+{
+  "version": "0.1.2",
+  "name": "boogiebaeren/contao-google-sso-bundle",
+  "description": "",
+  "homepage": "https://boogie-baeren.de",
+  "type": "contao-bundle",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Felix Schnabel",
+      "email": "felix.schnabel@boogie-baeren.de"
+    }
+  ],
+  "require": {
+    "php": "^7.4 || ^8.0",
+    "contao/core-bundle": "4.13.*",
+    "symfony/config": "^4.4 || ^5.1",
+    "symfony/dependency-injection": "^4.4 || ^5.1",
+    "symfony/http-kernel": "^4.4 || ^5.1",
+    "google/apiclient": "2.10",
+    "ext-json": "*"
+  },
+  "require-dev": {
+    "contao/manager-plugin": "^2.0",
+    "contao/easy-coding-standard": "^4.3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "BoogieBaeren\\ContaoGoogleSsoBundle\\": "src/"
+    }
+  },
+  "extra": {
+    "contao-manager-plugin": "BoogieBaeren\\ContaoGoogleSsoBundle\\ContaoManager\\Plugin"
+  },
+  "archive": {
+    "exclude": [
+      "vendor",
+      ".idea",
+      ".env.local",
+      "ecs.php"
+    ]
+  },
+  "config": {
+    "allow-plugins": {
+      "contao-components/installer": true,
+      "php-http/discovery": true,
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "contao/manager-plugin": true
+    },
+    "archive-format": "zip"
+  },
+  "scripts": {
+    "cs-fixer": [
+      "vendor/bin/ecs check src/ --fix"
+    ],
+    "zip": [
+      "composer archive"
+    ]
+  }
+}

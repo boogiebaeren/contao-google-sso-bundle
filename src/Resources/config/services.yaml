@@ -1,0 +1,13 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  BoogieBaeren\ContaoGoogleSsoBundle\Controller\:
+    resource: '../../Controller'
+
+  #BoogieBaeren\ContaoGoogleSsoBundle\EventListener\:
+  #  resource: '../../EventListener'
+
+  #BoogieBaeren\ContaoGoogleSsoBundle\Service\:
+  #  resource: '../../Service'

@@ -1,0 +1,15 @@
+*.csv
+*.txt
+*.zip
+*.tar
+.env.local
+.idea
+
+# Composer
+/vendor/
+/tests
+
+# PhpUnit
+/.phpunit.result.cache
+/phpunit.xml
+
