@@ -14,6 +14,8 @@ use Google\Service\Oauth2;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -29,7 +31,23 @@ class LoginController extends AbstractController
     /**
      * @Route("/contao/login_sso", name="login")
      */
-    public function login() {
+    public function login(Request $request): RedirectResponse
+    {
+        $this->initializeContaoFramework();
+
+        if ($this->isGranted('IS_AUTHENTICATED_FULLY')) {
+            if ($request->query->has('redirect')) {
+                $uriSigner = $this->container->get('uri_signer');
+
+                // We cannot use $request->getUri() here as we want to work with the original URI (no query string reordering)
+                if ($uriSigner->check($request->getSchemeAndHttpHost().$request->getBaseUrl().$request->getPathInfo().(null !== ($qs = $request->server->get('QUERY_STRING')) ? '?'.$qs : ''))) {
+                    return new RedirectResponse($request->query->get('redirect'));
+                }
+            }
+
+            return new RedirectResponse($this->generateUrl('contao_backend'));
+        }
+
         $client = new Client();
         $client->setClientId($_ENV['GOOGLE_SSO_CLIENTID']);
         $client->setClientSecret($_ENV['GOOGLE_SSO_CLIENTSECRET']);
@@ -48,18 +66,20 @@ class LoginController extends AbstractController
      *
      * @throws \Exception
      */
-    public function loginAction(ContaoFramework $framework,
+    public function loginAction(
+      Request $request,
+      ContaoFramework $framework,
       TokenStorageInterface $tokenStorage,
       EventDispatcherInterface $dispatcher,
       LoggerInterface $logger,
       RequestStack $requestStack,
       Connection $databaseConnection
-    ): string {
+    ): Response {
         $client = new Client();
         $client->setClientId($_ENV['GOOGLE_SSO_CLIENTID']);
         $client->setClientSecret($_ENV['GOOGLE_SSO_CLIENTSECRET']);
         $client->setRedirectUri($this->generateUrl('login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
-        $response_token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
+        $response_token = $client->fetchAccessTokenWithAuthCode($request->query->get('code'));
         if (!key_exists('access_token', $response_token)) {
             throw new \Exception(sprintf("No access token token available %s", json_encode($response_token)));
         }
@@ -155,6 +175,6 @@ class LoginController extends AbstractController
           ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
         );
 
-        return new Response("Success!!!");
+        return $this->redirect($this->generateUrl('contao_backend'));
     }
 }
