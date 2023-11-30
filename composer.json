@@ -1,5 +1,4 @@
 {
-  "version": "0.2.2",
   "name": "boogiebaeren/contao-google-sso-bundle",
   "description": "",
   "homepage": "https://boogie-baeren.de",
@@ -17,7 +16,7 @@
     "symfony/config": "^4.4 || ^5.1",
     "symfony/dependency-injection": "^4.4 || ^5.1",
     "symfony/http-kernel": "^4.4 || ^5.1",
-    "google/apiclient": "2.10",
+    "google/apiclient": "^2.10",
     "ext-json": "*"
   },
   "require-dev": {
