@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace BoogieBaeren\ContaoGoogleSsoBundle\Controller;
 
 use Contao\BackendUser;
-
 use Contao\CoreBundle\Controller\AbstractController;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Security\User\ContaoUserProvider;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception as DBALException;
 use Google\Client;
 use Google\Service\Oauth2;
 use Psr\Log\LoggerInterface;
@@ -152,7 +152,7 @@ class LoginController extends AbstractController
     }
 
     /**
-     * @throws \Doctrine\DBAL\Exception
+     * @throws DBALException
      * @throws \Exception
      *
      * @see \Contao\CoreBundle\Command\UserCreateCommand::persistUser()

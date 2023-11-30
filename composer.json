@@ -22,7 +22,10 @@
   },
   "require-dev": {
     "contao/manager-plugin": "^2.0",
-    "contao/easy-coding-standard": "^4.3.0"
+    "contao/easy-coding-standard": "^4",
+    "phpstan/phpstan": "^1.7",
+    "phpstan/phpstan-symfony": "^1.2",
+    "phpunit/phpunit": "^9"
   },
   "autoload": {
     "psr-4": {

@@ -7,7 +7,7 @@
 
 # Composer
 /vendor/
-/tests
+/localtests
 
 # PhpUnit
 /.phpunit.result.cache
