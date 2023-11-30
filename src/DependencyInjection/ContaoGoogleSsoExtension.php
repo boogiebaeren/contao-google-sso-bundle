@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BoogieBaeren\ContaoGoogleSsoBundle\DependencyInjection;
 
 use Symfony\Component\Config\FileLocator;
@@ -9,7 +11,6 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 class ContaoGoogleSsoExtension extends Extension
 {
-
     /**
      * @throws \Exception
      */

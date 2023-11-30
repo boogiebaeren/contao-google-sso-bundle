@@ -33,7 +33,7 @@ class Plugin implements BundlePluginInterface, RoutingPluginInterface
     public function getBundles(ParserInterface $parser): array
     {
         return [
-          BundleConfig::create(ContaoGoogleSsoBundle::class)->setLoadAfter([ContaoCoreBundle::class]),
+            BundleConfig::create(ContaoGoogleSsoBundle::class)->setLoadAfter([ContaoCoreBundle::class]),
         ];
     }
 }

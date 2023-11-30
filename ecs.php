@@ -10,13 +10,18 @@ use Symplify\EasyCodingStandard\Config\ECSConfig;
 return static function (ECSConfig $ecsConfig): void {
     $ecsConfig->sets([__DIR__.'/vendor/contao/easy-coding-standard/config/contao.php']);
 
-    $ecsConfig->ruleWithConfiguration(HeaderCommentFixer::class, [
-      'header' => ""
-    ]);
+    $ecsConfig->skip([HeaderCommentFixer::class]);
+    /* TODO once we have a header, we can use this
+     * $ecsConfig->ruleWithConfiguration(, [
+     *     'header' => "",
+     * ]);
+    */
 
     if (PHP_VERSION_ID < 80000) {
-        $ecsConfig->ruleWithConfiguration(TrailingCommaInMultilineFixer::class, ['elements' => ['arrays'], 'after_heredoc' => true]);
+        $ecsConfig->ruleWithConfiguration(
+            TrailingCommaInMultilineFixer::class,
+            ['elements' => ['arrays'], 'after_heredoc' => true]
+        );
         $ecsConfig->skip([PhpUnitExpectationFixer::class]);
     }
-
 };

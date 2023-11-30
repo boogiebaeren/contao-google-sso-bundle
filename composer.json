@@ -50,11 +50,10 @@
     "archive-format": "zip"
   },
   "scripts": {
-    "cs-fixer": [
-      "vendor/bin/ecs check src/ --fix"
-    ],
-    "zip": [
-      "composer archive"
-    ]
+    "cs-fixer": "vendor/bin/ecs check src/ --fix",
+    "zip": "composer archive",
+    "check-style": "vendor/bin/ecs check src --no-interaction --ansi",
+    "analyze": "vendor/bin/phpstan analyze",
+    "test": "vendor/bin/phpunit"
   }
 }
