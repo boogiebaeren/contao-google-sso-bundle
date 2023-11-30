@@ -25,32 +25,40 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
-use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
 class LoginController extends AbstractController
 {
+    private ContaoUserProvider $userProvider;
+    private Request $request;
+
+    public function __construct(ContaoUserProvider $userProvider, Request $request)
+    {
+        $this->userProvider = $userProvider;
+        $this->request = $request;
+    }
+
     /**
      * @Route("/contao/login_sso", name="login")
      *
      * @see \Contao\CoreBundle\Controller\BackendController::loginAction()
      */
-    public function login(Request $request, UriSigner $uriSigner): RedirectResponse
+    public function login(UriSigner $uriSigner): RedirectResponse
     {
         $this->initializeContaoFramework();
 
         if ($this->isGranted('IS_AUTHENTICATED_FULLY')) {
             // We cannot use $request->getUri() here as we want to work with the original URI (no query string reordering)
-            $uri = $request->getSchemeAndHttpHost().
-                $request->getBaseUrl().
-                $request->getPathInfo().
-                (null !== ($qs = $request->server->get('QUERY_STRING')) ? '?'.$qs : '');
+            $uri = $this->request->getSchemeAndHttpHost().
+                $this->request->getBaseUrl().
+                $this->request->getPathInfo().
+                (null !== ($qs = $this->request->server->get('QUERY_STRING')) ? '?'.$qs : '');
 
-            if ($request->query->has('redirect') && $uriSigner->check($uri)) {
-                return new RedirectResponse($request->query->get('redirect'));
+            if ($this->request->query->has('redirect') && $uriSigner->check($uri)) {
+                return $this->redirect($this->request->query->get('redirect'));
             }
 
-            return new RedirectResponse($this->generateUrl('contao_backend'));
+            return $this->redirectToRoute('contao_backend');
         }
 
         return $this->redirect($this->googleOAuthUrl());
@@ -62,8 +70,6 @@ class LoginController extends AbstractController
      * @throws \Exception
      */
     public function loginAction(
-        ContaoUserProvider $userProvider,
-        Request $request,
         TokenStorageInterface $tokenStorage,
         EventDispatcherInterface $dispatcher,
         LoggerInterface $logger,
@@ -78,7 +84,7 @@ class LoginController extends AbstractController
                 'redirect_uri' => $this->generateUrl('login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL),
             ]
         );
-        $response_token = $client->fetchAccessTokenWithAuthCode($request->query->get('code'));
+        $response_token = $client->fetchAccessTokenWithAuthCode($this->request->query->get('code'));
 
         if (!\array_key_exists('access_token', $response_token)) {
             throw new \Exception(sprintf('No access token token available %s', json_encode($response_token)));
@@ -112,7 +118,7 @@ class LoginController extends AbstractController
 
         $session = $requestStack->getCurrentRequest()->getSession();
 
-        $user = $userProvider->loadUserByIdentifier($userinfo->email);
+        $user = $this->userProvider->loadUserByIdentifier($userinfo->email);
 
         $response_token = new UsernamePasswordToken($user, 'contao_backend', $user->getRoles());
         $tokenStorage->setToken($response_token);

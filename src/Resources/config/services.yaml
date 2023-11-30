@@ -3,8 +3,13 @@ services:
     autowire: true
     autoconfigure: true
 
+
   BoogieBaeren\ContaoGoogleSsoBundle\Controller\:
     resource: '../../Controller'
+
+  BoogieBaeren\ContaoGoogleSsoBundle\Controller\LoginController:
+    arguments:
+      $userProvider: '@contao.security.backend_user_provider'
 
   #BoogieBaeren\ContaoGoogleSsoBundle\EventListener\:
   #  resource: '../../EventListener'
