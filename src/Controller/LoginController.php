@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace BoogieBaeren\ContaoGoogleSsoBundle\Controller;
 
 use Contao\BackendUser;
+
 use Contao\CoreBundle\Controller\AbstractController;
-use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Security\User\ContaoUserProvider;
 use Doctrine\DBAL\Connection;
@@ -20,17 +20,20 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\UriSigner;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
-use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
 class LoginController extends AbstractController
 {
     /**
      * @Route("/contao/login_sso", name="login")
+     *
+     * @see \Contao\CoreBundle\Controller\BackendController::loginAction()
      */
     public function login(Request $request, UriSigner $uriSigner): RedirectResponse
     {
@@ -50,6 +53,86 @@ class LoginController extends AbstractController
             return new RedirectResponse($this->generateUrl('contao_backend'));
         }
 
+        return $this->redirect($this->googleOAuthUrl());
+    }
+
+    /**
+     * @Route("/contao/login_sso/redirect", name="login_redirect")
+     *
+     * @throws \Exception
+     */
+    public function loginAction(
+        ContaoUserProvider $userProvider,
+        Request $request,
+        TokenStorageInterface $tokenStorage,
+        EventDispatcherInterface $dispatcher,
+        LoggerInterface $logger,
+        RequestStack $requestStack,
+        Connection $databaseConnection,
+        PasswordHasherFactoryInterface $passwordHasherFactory
+    ): Response {
+        $client = new Client(
+            [
+                'client_id' => $_ENV['GOOGLE_SSO_CLIENTID'],
+                'client_secret' => $_ENV['GOOGLE_SSO_CLIENTSECRET'],
+                'redirect_uri' => $this->generateUrl('login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL),
+            ]
+        );
+        $response_token = $client->fetchAccessTokenWithAuthCode($request->query->get('code'));
+
+        if (!\array_key_exists('access_token', $response_token)) {
+            throw new \Exception(sprintf('No access token token available %s', json_encode($response_token)));
+        }
+
+        $client->setAccessToken($response_token);
+        $userinfo = (new Oauth2($client))->userinfo->get();
+
+        $userInDb = $databaseConnection->executeQuery(
+            'SELECT * FROM tl_user WHERE username = :username',
+            [
+                'username' => $userinfo->email,
+            ]
+        )->fetchOne();
+
+        if (!$userInDb) {
+            $logger->log(
+                LogLevel::INFO,
+                'User "'.$userinfo->email.'" was not found in the database',
+                ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
+            );
+            $this->persistUser(
+                $databaseConnection,
+                $passwordHasherFactory,
+                $userinfo->email,
+                $userinfo->name,
+                $userinfo->email,
+                $userinfo->getLocale()
+            );
+        }
+
+        $session = $requestStack->getCurrentRequest()->getSession();
+
+        $user = $userProvider->loadUserByIdentifier($userinfo->email);
+
+        $response_token = new UsernamePasswordToken($user, 'contao_backend', $user->getRoles());
+        $tokenStorage->setToken($response_token);
+
+        $session->set('_security_'.'contao_backend', serialize($response_token));
+        $session->save();
+
+        $dispatcher->dispatch(new InteractiveLoginEvent($requestStack->getCurrentRequest(), $response_token), 'security.interactive_login');
+
+        $logger->log(
+            LogLevel::INFO,
+            'User "'.$userinfo->email.'" was logged in automatically',
+            ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
+        );
+
+        return $this->redirect($this->generateUrl('contao_backend'));
+    }
+
+    private function googleOAuthUrl(): string
+    {
         $client = new Client();
         $client->setClientId($_ENV['GOOGLE_SSO_CLIENTID']);
         $client->setClientSecret($_ENV['GOOGLE_SSO_CLIENTSECRET']);
@@ -59,121 +142,37 @@ class LoginController extends AbstractController
         // your app can refresh the access token without user interaction.
         $client->setAccessType('offline');
         $client->setPrompt('select_account');
-        $auth_url = $client->createAuthUrl();
 
-        return $this->redirect($auth_url);
+        return $client->createAuthUrl();
     }
 
     /**
-     * @Route("/contao/login_sso/redirect", name="login_redirect")
-     *
+     * @throws \Doctrine\DBAL\Exception
      * @throws \Exception
+     *
+     * @see \Contao\CoreBundle\Command\UserCreateCommand::persistUser()
      */
-    public function loginAction(Request $request, ContaoFramework $framework, TokenStorageInterface $tokenStorage, EventDispatcherInterface $dispatcher, LoggerInterface $logger, RequestStack $requestStack, Connection $databaseConnection): Response
+    private function persistUser(Connection $connection, PasswordHasherFactoryInterface $passwordHasherFactory, string $username, string $name, string $email, string $language): void
     {
-        $client = new Client();
-        $client->setClientId($_ENV['GOOGLE_SSO_CLIENTID']);
-        $client->setClientSecret($_ENV['GOOGLE_SSO_CLIENTSECRET']);
-        $client->setRedirectUri($this->generateUrl('login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
-        $response_token = $client->fetchAccessTokenWithAuthCode($request->query->get('code'));
-
-        if (!\array_key_exists('access_token', $response_token)) {
-            throw new \Exception(sprintf('No access token token available %s', json_encode($response_token)));
-        }
-
-        $client->setAccessToken($response_token);
-        $oauth2 = new Oauth2($client);
-        $userinfo = $oauth2->userinfo->get();
-
-        $userInDb = $databaseConnection->createQueryBuilder()
-            ->select('*')
-            ->from('tl_user')
-            ->where('username =:username')
-            ->setParameter('username', $userinfo->email)
-            ->executeQuery()->fetchAllAssociative();
-
         $alphabet = 'abcdefghijklmnopqrstuwxyzABCDEFGHIJKLMNOPQRSTUWXYZ0123456789';
         $password = '';
 
         for ($i = 0; $i < 8; ++$i) {
-            $n = random_int(0, \strlen($alphabet) - 1);
-            $password .= $alphabet[$n];
+            $password .= $alphabet[random_int(0, \strlen($alphabet) - 1)];
         }
-        $passwordLength = 8;
+        $time = time();
 
-        if (\strlen($password) < $passwordLength) {
-            throw new \Exception(sprintf('The password must be at least %s characters long.', $passwordLength));
-        }
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-
-        if (null === $userInDb) {
-            $logger->log(
-                LogLevel::INFO,
-                'User "'.$userinfo->email.'" was not found in the database',
-                ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
-            );
-            $databaseConnection->createQueryBuilder()
-                ->insert('tl_user')
-                ->values(
-                    [
-                        'tstamp' => '?',
-                        'password' => '?',
-                        'name' => '?',
-                        'language' => '?',
-                        'email' => '?',
-                        'username' => '?',
-                        'dateAdded' => '?',
-                    ]
-                )->setParameters(
-                    [
-                        0 => time(),
-                        1 => $hash,
-                        2 => $userinfo->name,
-                        3 => $userinfo->getLocale(),
-                        4 => $userinfo->email,
-                        5 => $userinfo->email,
-                        6 => time(),
-                    ]
-                )->executeStatement();
-        } else {
-            $databaseConnection->createQueryBuilder()
-                ->update('tl_user')
-                ->set('password', ':password')
-                ->set('name', ':name')
-                ->set('language', ':language')
-                ->set('email', ':email')
-                ->where('username =:username')
-                ->setParameter('password', $hash)
-                ->setParameter('name', $userinfo->name)
-                ->setParameter('language', $userinfo->getLocale())
-                ->setParameter('email', $userinfo->email)
-                ->setParameter('username', $userinfo->email)->executeStatement();
-        }
-
-        $session = $requestStack->getCurrentRequest()->getSession();
-        $userProvider = new ContaoUserProvider($framework, $session, BackendUser::class);
-
-        try {
-            $user = $userProvider->loadUserByIdentifier($userinfo->email);
-        } catch (UsernameNotFoundException $exception) {
-            throw new \Exception(sprintf('The username "%s" does not exist.', $userinfo->email));
-        }
-
-        $response_token = new UsernamePasswordToken($user, null, 'contao_backend', $user->getRoles());
-        $tokenStorage->setToken($response_token);
-
-        $session->set('_security_'.'contao_backend', serialize($response_token));
-        $session->save();
-
-        $event = new InteractiveLoginEvent($requestStack->getCurrentRequest(), $response_token);
-        $dispatcher->dispatch($event, 'security.interactive_login');
-
-        $logger->log(
-            LogLevel::INFO,
-            'User "'.$userinfo->email.'" was logged in automatically',
-            ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
-        );
-
-        return $this->redirect($this->generateUrl('contao_backend'));
+        $connection->insert('tl_user', [
+            'tstamp' => $time,
+            'name' => $name,
+            'email' => $email,
+            'username' => $username,
+            'password' => $passwordHasherFactory->getPasswordHasher(BackendUser::class)->hash($password),
+            'language' => $language,
+            'backendTheme' => 'flexible',
+            'admin' => false,
+            'pwChange' => false,
+            'dateAdded' => $time,
+        ]);
     }
 }
