@@ -30,12 +30,10 @@ use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 class LoginController extends AbstractController
 {
     private ContaoUserProvider $userProvider;
-    private Request $request;
 
-    public function __construct(ContaoUserProvider $userProvider, Request $request)
+    public function __construct(ContaoUserProvider $userProvider)
     {
         $this->userProvider = $userProvider;
-        $this->request = $request;
     }
 
     /**
@@ -43,19 +41,19 @@ class LoginController extends AbstractController
      *
      * @see \Contao\CoreBundle\Controller\BackendController::loginAction()
      */
-    public function login(UriSigner $uriSigner): RedirectResponse
+    public function login(Request $request, UriSigner $uriSigner): RedirectResponse
     {
         $this->initializeContaoFramework();
 
         if ($this->isGranted('IS_AUTHENTICATED_FULLY')) {
             // We cannot use $request->getUri() here as we want to work with the original URI (no query string reordering)
-            $uri = $this->request->getSchemeAndHttpHost().
-                $this->request->getBaseUrl().
-                $this->request->getPathInfo().
-                (null !== ($qs = $this->request->server->get('QUERY_STRING')) ? '?'.$qs : '');
+            $uri = $request->getSchemeAndHttpHost().
+                $request->getBaseUrl().
+                $request->getPathInfo().
+                (null !== ($qs = $request->server->get('QUERY_STRING')) ? '?'.$qs : '');
 
-            if ($this->request->query->has('redirect') && $uriSigner->check($uri)) {
-                return $this->redirect($this->request->query->get('redirect'));
+            if ($request->query->has('redirect') && $uriSigner->check($uri)) {
+                return $this->redirect($request->query->get('redirect'));
             }
 
             return $this->redirectToRoute('contao_backend');
@@ -70,6 +68,7 @@ class LoginController extends AbstractController
      * @throws \Exception
      */
     public function loginAction(
+        Request $request,
         TokenStorageInterface $tokenStorage,
         EventDispatcherInterface $dispatcher,
         LoggerInterface $logger,
@@ -84,7 +83,7 @@ class LoginController extends AbstractController
                 'redirect_uri' => $this->generateUrl('login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL),
             ]
         );
-        $response_token = $client->fetchAccessTokenWithAuthCode($this->request->query->get('code'));
+        $response_token = $client->fetchAccessTokenWithAuthCode($request->query->get('code'));
 
         if (!\array_key_exists('access_token', $response_token)) {
             throw new \Exception(sprintf('No access token token available %s', json_encode($response_token)));
