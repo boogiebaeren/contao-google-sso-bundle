@@ -17,7 +17,6 @@ use Psr\Log\LogLevel;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\UriSigner;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
@@ -72,7 +71,6 @@ class LoginController extends AbstractController
         TokenStorageInterface $tokenStorage,
         EventDispatcherInterface $dispatcher,
         LoggerInterface $logger,
-        RequestStack $requestStack,
         Connection $databaseConnection,
         PasswordHasherFactoryInterface $passwordHasherFactory
     ): Response {
@@ -115,7 +113,7 @@ class LoginController extends AbstractController
             );
         }
 
-        $session = $requestStack->getCurrentRequest()->getSession();
+        $session = $request->getSession();
 
         $user = $this->userProvider->loadUserByIdentifier($userinfo->email);
 
@@ -125,7 +123,7 @@ class LoginController extends AbstractController
         $session->set('_security_'.'contao_backend', serialize($response_token));
         $session->save();
 
-        $dispatcher->dispatch(new InteractiveLoginEvent($requestStack->getCurrentRequest(), $response_token), 'security.interactive_login');
+        $dispatcher->dispatch(new InteractiveLoginEvent($request, $response_token), 'security.interactive_login');
 
         $logger->log(
             LogLevel::INFO,
@@ -133,7 +131,7 @@ class LoginController extends AbstractController
             ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
         );
 
-        return $this->redirect($this->generateUrl('contao_backend'));
+        return $this->redirectToRoute('contao_backend');
     }
 
     private function googleOAuthUrl(): string

@@ -11,18 +11,18 @@
     }
   ],
   "require": {
-    "php": "^7.4 || ^8.0",
+    "php": "^8.0",
     "contao/core-bundle": "4.13.*",
-    "symfony/config": "^4.4 || ^5.1",
-    "symfony/dependency-injection": "^4.4 || ^5.1",
-    "symfony/http-kernel": "^4.4 || ^5.1",
-    "google/apiclient": "^2.10",
+    "symfony/config": "^5.4",
+    "symfony/dependency-injection": "^5.4",
+    "symfony/http-kernel": "^5.4",
+    "google/apiclient": "^2.15",
     "ext-json": "*"
   },
   "require-dev": {
     "contao/manager-plugin": "^2.0",
     "contao/easy-coding-standard": "^4",
-    "phpstan/phpstan": "^1.7",
+    "phpstan/phpstan": "^1.10",
     "phpstan/phpstan-symfony": "^1.2",
     "phpunit/phpunit": "^9"
   },
@@ -32,7 +32,10 @@
     }
   },
   "extra": {
-    "contao-manager-plugin": "BoogieBaeren\\ContaoGoogleSsoBundle\\ContaoManager\\Plugin"
+    "contao-manager-plugin": "BoogieBaeren\\ContaoGoogleSsoBundle\\ContaoManager\\Plugin",
+    "google/apiclient-services": [
+      "Oauth2"
+    ]
   },
   "archive": {
     "exclude": [
@@ -52,6 +55,7 @@
     "archive-format": "zip"
   },
   "scripts": {
+    "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
     "cs-fixer": "vendor/bin/ecs check src/ --fix",
     "zip": "composer archive",
     "check-style": "vendor/bin/ecs check src --no-interaction --ansi",
