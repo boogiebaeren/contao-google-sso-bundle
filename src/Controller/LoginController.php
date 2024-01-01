@@ -81,7 +81,11 @@ class LoginController extends AbstractController
                 'redirect_uri' => $this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL),
             ]
         );
-        $response_token = $client->fetchAccessTokenWithAuthCode($request->query->get('code'));
+        $code = $request->query->get('code');
+        if (!$code) {
+            throw new \Exception('No code found');
+        }
+        $response_token = $client->fetchAccessTokenWithAuthCode($code);
 
         if (!\array_key_exists('access_token', $response_token)) {
             throw new \Exception(sprintf('No access token token available %s', json_encode($response_token)));

@@ -3,15 +3,8 @@ includes:
     - vendor/phpstan/phpstan-symfony/rules.neon
 
 parameters:
-    level: 6
+    level: 9
 
     paths:
         - %currentWorkingDirectory%/src
         - %currentWorkingDirectory%/tests
-
-    universalObjectCratesClasses:
-        - Contao\Model
-        - Contao\Template
-
-    excludePaths:
-        - %currentWorkingDirectory%/src/Resources/*
