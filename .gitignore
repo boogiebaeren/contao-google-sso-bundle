@@ -4,6 +4,7 @@
 *.tar
 .env.local
 .idea
+composer.lock
 
 # Composer
 /vendor/
