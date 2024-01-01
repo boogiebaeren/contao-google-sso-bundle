@@ -36,7 +36,7 @@ class LoginController extends AbstractController
     }
 
     /**
-     * @Route("/contao/login_sso", name="login")
+     * @Route("/contao/login_sso", name="google_sso_login")
      *
      * @see \Contao\CoreBundle\Controller\BackendController::loginAction()
      */
@@ -62,7 +62,7 @@ class LoginController extends AbstractController
     }
 
     /**
-     * @Route("/contao/login_sso/redirect", name="login_redirect")
+     * @Route("/contao/login_sso/redirect", name="google_sso_login_redirect")
      *
      * @throws \Exception
      */
@@ -78,7 +78,7 @@ class LoginController extends AbstractController
             [
                 'client_id' => $_ENV['GOOGLE_SSO_CLIENTID'],
                 'client_secret' => $_ENV['GOOGLE_SSO_CLIENTSECRET'],
-                'redirect_uri' => $this->generateUrl('login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL),
+                'redirect_uri' => $this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL),
             ]
         );
         $response_token = $client->fetchAccessTokenWithAuthCode($request->query->get('code'));
@@ -123,6 +123,7 @@ class LoginController extends AbstractController
         $session->set('_security_'.'contao_backend', serialize($response_token));
         $session->save();
 
+        //Somehow this should be triggered: Contao\CoreBundle\Security\Authentication\AuthenticationSuccessHandler::onAuthenticationSuccess()
         $dispatcher->dispatch(new InteractiveLoginEvent($request, $response_token), 'security.interactive_login');
 
         $logger->log(
@@ -140,7 +141,7 @@ class LoginController extends AbstractController
         $client->setClientId($_ENV['GOOGLE_SSO_CLIENTID']);
         $client->setClientSecret($_ENV['GOOGLE_SSO_CLIENTSECRET']);
         $client->addScope([Oauth2::USERINFO_EMAIL, Oauth2::USERINFO_PROFILE]);
-        $client->setRedirectUri($this->generateUrl('login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
+        $client->setRedirectUri($this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
         // offline access will give you both an access and refresh token so that
         // your app can refresh the access token without user interaction.
         $client->setAccessType('offline');
