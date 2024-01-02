@@ -40,7 +40,7 @@ class LoginController extends AbstractController
      *
      * @see \Contao\CoreBundle\Controller\BackendController::loginAction()
      */
-    public function login(Request $request, UriSigner $uriSigner): RedirectResponse
+    public function login(Client $client, Request $request, UriSigner $uriSigner): RedirectResponse
     {
         $this->initializeContaoFramework();
 
@@ -58,7 +58,7 @@ class LoginController extends AbstractController
             return $this->redirectToRoute('contao_backend');
         }
 
-        return $this->redirect($this->googleOAuthUrl());
+        return $this->redirect($this->googleOAuthUrl($client));
     }
 
     /**
@@ -67,6 +67,7 @@ class LoginController extends AbstractController
      * @throws \Exception
      */
     public function loginAction(
+        Client $client,
         Request $request,
         TokenStorageInterface $tokenStorage,
         EventDispatcherInterface $dispatcher,
@@ -74,14 +75,9 @@ class LoginController extends AbstractController
         Connection $databaseConnection,
         PasswordHasherFactoryInterface $passwordHasherFactory
     ): Response {
-        $client = new Client(
-            [
-                'client_id' => $_ENV['GOOGLE_SSO_CLIENTID'],
-                'client_secret' => $_ENV['GOOGLE_SSO_CLIENTSECRET'],
-                'redirect_uri' => $this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL),
-            ]
-        );
+        $client->setRedirectUri($this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
         $code = $request->query->get('code');
+
         if (!$code) {
             throw new \Exception('No code found');
         }
@@ -139,11 +135,8 @@ class LoginController extends AbstractController
         return $this->redirectToRoute('contao_backend');
     }
 
-    private function googleOAuthUrl(): string
+    private function googleOAuthUrl(Client $client): string
     {
-        $client = new Client();
-        $client->setClientId($_ENV['GOOGLE_SSO_CLIENTID']);
-        $client->setClientSecret($_ENV['GOOGLE_SSO_CLIENTSECRET']);
         $client->addScope([Oauth2::USERINFO_EMAIL, Oauth2::USERINFO_PROFILE]);
         $client->setRedirectUri($this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
         // offline access will give you both an access and refresh token so that

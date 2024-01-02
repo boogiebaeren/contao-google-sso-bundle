@@ -25,11 +25,13 @@ class Plugin implements BundlePluginInterface, RoutingPluginInterface
         $path = __DIR__.'/../Controller';
 
         $loader = $resolver->resolve($path, 'annotation');
+
         if (false === $loader) {
             throw new \Exception(sprintf('Could not resolve loader for path "%s"', $path));
         }
 
         $routecollection = $loader->load($path);
+
         if (!$routecollection instanceof RouteCollection) {
             throw new \Exception(sprintf('Could not load routes from path "%s"', $path));
         }

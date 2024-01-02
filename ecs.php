@@ -12,6 +12,7 @@ return static function (ECSConfig $ecsConfig): void {
     $ecsConfig->sets([__DIR__.'/vendor/contao/easy-coding-standard/config/contao.php']);
 
     $ecsConfig->skip([NoLineBreakBetweenMethodArgumentsFixer::class, HeaderCommentFixer::class]);
+    $ecsConfig->lineEnding("\n");
     /* TODO once we have a header, we can use this
      * $ecsConfig->ruleWithConfiguration(, [
      *     'header' => "",

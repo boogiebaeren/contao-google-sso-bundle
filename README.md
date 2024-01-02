@@ -15,6 +15,31 @@ You need to define two environment variables:
 - GOOGLE_SSO_CLIENTID
 - GOOGLE_SSO_CLIENTSECRET
 
+You then need to add the following configuration to your `config/config.yaml` file:
+
+```yaml
+# config/config.yaml
+boogiebaeren:
+  google_sso:
+    client_id: '%env(GOOGLE_SSO_CLIENTID)%'
+    client_secret: '%env(GOOGLE_SSO_CLIENTSECRET)%'
+```
+
+You should also add the following to your `composer.json` file to remove all unused Google Services:
+
+```json
+{
+  "extra": {
+    "google/apiclient-services": [
+      "Oauth2"
+    ]
+  },
+  "scripts": {
+    "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
+  }
+}
+```
+
 You need to be an administrator of a Google Workspace instance to create a new OAuth client.
 First create a new project inside the [Google Cloud Console](https://console.cloud.google.com/),
 then create a new OAuth client.

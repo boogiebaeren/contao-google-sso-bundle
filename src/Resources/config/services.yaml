@@ -11,6 +11,13 @@ services:
     arguments:
       $userProvider: '@contao.security.backend_user_provider'
 
+  google.sso:
+    class: Google\Client
+    arguments:
+      $config:
+        client_id: '%env(GOOGLE_SSO_CLIENTID)%'
+        client_secret: '%env(GOOGLE_SSO_CLIENTSECRET)%'
+
   #BoogieBaeren\ContaoGoogleSsoBundle\EventListener\:
   #  resource: '../../EventListener'
 
