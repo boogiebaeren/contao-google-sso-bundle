@@ -12,7 +12,6 @@ services:
       $userProvider: '@contao.security.backend_user_provider'
 
   google.sso:
-    alias: Google\Client
     class: Google\Client
     arguments:
       $config:
