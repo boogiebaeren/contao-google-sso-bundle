@@ -11,13 +11,12 @@ class Configuration implements ConfigurationInterface
 {
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder('boogiebaeren');
+        $treeBuilder = new TreeBuilder('contao_google_sso');
 
-        $treeBuilder->getRootNode()->children()->arrayNode('google_sso')
-            ->children()
+        $treeBuilder->getRootNode()->children()
             ->scalarNode('client_id')->end()
             ->scalarNode('client_secret')->end()
-            ->end()->end()->end();
+            ->end()->end();
 
         return $treeBuilder;
     }

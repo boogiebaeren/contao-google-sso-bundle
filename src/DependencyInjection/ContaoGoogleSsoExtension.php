@@ -12,7 +12,7 @@ use Symfony\Component\HttpKernel\DependencyInjection\ConfigurableExtension;
 class ContaoGoogleSsoExtension extends ConfigurableExtension
 {
     /**
-     * @param array{google_sso: array{client_id: string, client_secret: string}} $mergedConfig
+     * @param array{client_id: string, client_secret: string} $mergedConfig
      *
      * @throws \Exception
      */
@@ -22,7 +22,7 @@ class ContaoGoogleSsoExtension extends ConfigurableExtension
         $loader->load('services.yaml');
 
         $definition = $container->getDefinition('google.sso');
-        $definition->replaceArgument(0, $mergedConfig['google_sso']['client_id']);
-        $definition->replaceArgument(1, $mergedConfig['google_sso']['client_secret']);
+        $definition->replaceArgument(0, $mergedConfig['client_id']);
+        $definition->replaceArgument(1, $mergedConfig['client_secret']);
     }
 }
