@@ -22,7 +22,6 @@ class ContaoGoogleSsoExtension extends ConfigurableExtension
         $loader->load('services.yaml');
 
         $definition = $container->getDefinition('google.sso');
-        $definition->replaceArgument(0, $mergedConfig['client_id']);
-        $definition->replaceArgument(1, $mergedConfig['client_secret']);
+        $definition->replaceArgument('$config', $mergedConfig);
     }
 }
