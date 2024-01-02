@@ -18,7 +18,7 @@ services:
       $config:
         client_id: '%env(GOOGLE_SSO_CLIENTID)%'
         client_secret: '%env(GOOGLE_SSO_CLIENTSECRET)%'
-
+  Google\Client: '@google.sso'
   #BoogieBaeren\ContaoGoogleSsoBundle\EventListener\:
   #  resource: '../../EventListener'
 
