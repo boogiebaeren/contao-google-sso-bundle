@@ -116,6 +116,7 @@ class LoginController extends AbstractController
         $session = $request->getSession();
 
         $user = $this->userProvider->loadUserByIdentifier($userinfo->email);
+
         if ($user->locked) {
             $logger->log(
                 LogLevel::INFO,
