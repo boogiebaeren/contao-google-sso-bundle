@@ -36,10 +36,9 @@ class LoginController extends AbstractController
     }
 
     /**
-     * @Route("/contao/login_sso", name="google_sso_login")
-     *
      * @see \Contao\CoreBundle\Controller\BackendController::loginAction()
      */
+    #[Route('/contao/login_sso', name: 'google_sso_login')]
     public function login(Client $client, Request $request, UriSigner $uriSigner): RedirectResponse
     {
         $this->initializeContaoFramework();
@@ -62,10 +61,9 @@ class LoginController extends AbstractController
     }
 
     /**
-     * @Route("/contao/login_sso/redirect", name="google_sso_login_redirect")
-     *
      * @throws \Exception
      */
+    #[Route('/contao/login_sso/redirect', name: 'google_sso_login_redirect')]
     public function loginAction(
         Client $client,
         Request $request,
