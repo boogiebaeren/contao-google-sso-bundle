@@ -54,3 +54,5 @@ root folder of your Contao installation.
 After you've configured the environment variables, you can log in using the new login
 url (`https://<your-domain>/contao/login_sso`).
 
+# References
+This bundle was inspired by https://github.com/BROCKHAUS-AG/contao-microsoft-sso-bundle and uses a similar flow.
