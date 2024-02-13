@@ -116,6 +116,16 @@ class LoginController extends AbstractController
         $session = $request->getSession();
 
         $user = $this->userProvider->loadUserByIdentifier($userinfo->email);
+        if ($user->locked) {
+            $logger->log(
+                LogLevel::INFO,
+                'User "'.$userinfo->email.'" is locked',
+                ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
+            );
+
+            return $this->redirectToRoute('contao_backend');
+        }
+        $user->loginAttempts = 0;
         $user->lastLogin = $user->currentLogin;
         $user->currentLogin = time();
         $user->save();
