@@ -116,6 +116,9 @@ class LoginController extends AbstractController
         $session = $request->getSession();
 
         $user = $this->userProvider->loadUserByIdentifier($userinfo->email);
+        $user->lastLogin = $user->currentLogin;
+        $user->currentLogin = time();
+        $user->save();
 
         $response_token = new UsernamePasswordToken($user, 'contao_backend', $user->getRoles());
         $tokenStorage->setToken($response_token);
