@@ -30,9 +30,10 @@ class LoginController extends AbstractController
 {
     private ContaoUserProvider $userProvider;
 
-    public function __construct(ContaoUserProvider $userProvider)
+    public function __construct(ContaoUserProvider $userProvider, string $hostedDomain)
     {
         $this->userProvider = $userProvider;
+        $this->hostedDomain = $hostedDomain;
     }
 
     /**
@@ -71,8 +72,7 @@ class LoginController extends AbstractController
         EventDispatcherInterface $dispatcher,
         LoggerInterface $logger,
         Connection $databaseConnection,
-        PasswordHasherFactoryInterface $passwordHasherFactory,
-        string $hostedDomain
+        PasswordHasherFactoryInterface $passwordHasherFactory
     ): Response {
         $client->setRedirectUri($this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
         $code = $request->query->get('code');
@@ -80,7 +80,7 @@ class LoginController extends AbstractController
         if (!$code) {
             $id_token = $request->request->get('credential');
             $payload = $client->verifyIdToken($id_token);
-            if (!$payload || $payload['hd'] !== $hostedDomain) {
+            if (!$payload || $payload['hd'] !== $this->hostedDomain) {
                 throw new \Exception('Token was invalid');
             }
             $userinfo = (object) $payload;
