@@ -25,7 +25,6 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
-use Webmozart\Assert\Assert;
 
 class LoginController extends AbstractController
 {
@@ -80,8 +79,9 @@ class LoginController extends AbstractController
         $code = $request->query->get('code');
 
         if (!$code) {
+            /** @var ?string $id_token */
             $id_token = $request->request->get('credential');
-            Assert::nullOrString($id_token);
+
             $payload = $client->verifyIdToken($id_token);
 
             if (!$payload || $payload['hd'] !== $this->hostedDomain) {
