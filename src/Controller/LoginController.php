@@ -80,6 +80,7 @@ class LoginController extends AbstractController
         if (!$code) {
             $id_token = $request->request->get('credential');
             $payload = $client->verifyIdToken($id_token);
+
             if (!$payload || $payload['hd'] !== $this->hostedDomain) {
                 throw new \Exception('Token was invalid');
             }
@@ -90,7 +91,7 @@ class LoginController extends AbstractController
             if (!\array_key_exists('access_token', $response_token)) {
                 throw new \Exception(sprintf('No access token token available %s', json_encode($response_token)));
             }
-    
+
             $client->setAccessToken($response_token);
             $userinfo = (new Oauth2($client))->userinfo->get();
         }

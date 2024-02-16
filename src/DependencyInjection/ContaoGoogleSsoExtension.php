@@ -27,7 +27,7 @@ class ContaoGoogleSsoExtension extends ConfigurableExtension
         $definition = $container->getDefinition('google.sso');
         $definition->replaceArgument('$config', [
             'client_id' => $mergedConfig['client_id'],
-            'client_secret' => $mergedConfig['client_secret']
+            'client_secret' => $mergedConfig['client_secret'],
         ]);
     }
 }
