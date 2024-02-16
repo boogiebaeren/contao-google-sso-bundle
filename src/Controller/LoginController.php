@@ -71,22 +71,29 @@ class LoginController extends AbstractController
         EventDispatcherInterface $dispatcher,
         LoggerInterface $logger,
         Connection $databaseConnection,
-        PasswordHasherFactoryInterface $passwordHasherFactory
+        PasswordHasherFactoryInterface $passwordHasherFactory,
+        string $hostedDomain
     ): Response {
         $client->setRedirectUri($this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
         $code = $request->query->get('code');
 
         if (!$code) {
-            throw new \Exception('No code found');
-        }
-        $response_token = $client->fetchAccessTokenWithAuthCode($code);
+            $id_token = $request->request->get('credential');
+            $payload = $client->verifyIdToken($id_token);
+            if (!$payload || $payload['hd'] !== $hostedDomain) {
+                throw new \Exception('Token was invalid');
+            }
+            $userinfo = (object) $payload;
+        } else {
+            $response_token = $client->fetchAccessTokenWithAuthCode($code);
 
-        if (!\array_key_exists('access_token', $response_token)) {
-            throw new \Exception(sprintf('No access token token available %s', json_encode($response_token)));
+            if (!\array_key_exists('access_token', $response_token)) {
+                throw new \Exception(sprintf('No access token token available %s', json_encode($response_token)));
+            }
+    
+            $client->setAccessToken($response_token);
+            $userinfo = (new Oauth2($client))->userinfo->get();
         }
-
-        $client->setAccessToken($response_token);
-        $userinfo = (new Oauth2($client))->userinfo->get();
 
         $userInDb = $databaseConnection->executeQuery(
             'SELECT * FROM tl_user WHERE username = :username',

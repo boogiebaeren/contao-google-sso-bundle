@@ -10,6 +10,7 @@ services:
   BoogieBaeren\ContaoGoogleSsoBundle\Controller\LoginController:
     arguments:
       $userProvider: '@contao.security.backend_user_provider'
+      $hostedDomain: '%env(GOOGLE_SSO_HOSTEDDOMAIN)'
 
   google.sso:
     class: Google\Client

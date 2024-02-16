@@ -22,6 +22,12 @@ class ContaoGoogleSsoExtension extends ConfigurableExtension
         $loader->load('services.yaml');
 
         $definition = $container->getDefinition('google.sso');
-        $definition->replaceArgument('$config', $mergedConfig);
+        $definition->replaceArgument('$hostedDomain', $mergedConfig['hosted_domain']);
+
+        $definition = $container->getDefinition(BoogieBaeren\ContaoGoogleSsoBundle\Controller\LoginController::class);
+        $definition->replaceArgument('$config', [
+            'client_id' => $mergedConfig['client_id'],
+            'client_secret' => $mergedConfig['client_secret']
+        ]);
     }
 }

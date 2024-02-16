@@ -22,6 +22,7 @@ You then need to add the following configuration to your `config/config.yaml` fi
 contao_google_sso:
   client_id: '%env(GOOGLE_SSO_CLIENTID)%'
   client_secret: '%env(GOOGLE_SSO_CLIENTSECRET)%'
+  hosted_domain: your-google-workspace-domain-name
 ```
 
 You should also add the following to your `composer.json` file to remove all unused Google Services:
