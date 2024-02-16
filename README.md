@@ -55,5 +55,31 @@ root folder of your Contao installation.
 After you've configured the environment variables, you can log in using the new login
 url (`https://<your-domain>/contao/login_sso`).
 
+## Integrating the login into the be_login page
+
+If you don't want a different login url you can also overwrite the `be_login.html5` template.
+For this, you can create a `be_login.html5` file under your `templates` folder and add the following snippet (replacing):
+```php
+<?php $this->extend('be_login'); ?>
+
+<?php $this->block('head'); ?>
+<?php $this->parent(); ?>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<?php $this->endblock(); ?>
+
+<?php $this->block('container'); ?>
+<?php $this->parent(); ?>
+<div id="g_id_onload"
+     data-client_id="<YOUR_CLIENT_ID>"
+     data-context="signin"
+     data-login_uri="https://<your-domain>/contao/login_sso/redirect"
+     data-auto_select="false"
+     data-close_on_tap_outside="false"
+     data-itp_support="true">
+</div>
+<?php $this->endblock(); ?>
+```
+
 # References
-This bundle was inspired by https://github.com/BROCKHAUS-AG/contao-microsoft-sso-bundle and uses a similar flow.
+This bundle was inspired by https://github.com/BROCKHAUS-AG/contao-microsoft-sso-bundle and uses a similar flow.  
+Documentation to google login: https://developers.google.com/identity/authentication
