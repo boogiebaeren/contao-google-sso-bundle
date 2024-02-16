@@ -25,10 +25,12 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
+use Webmozart\Assert\Assert;
 
 class LoginController extends AbstractController
 {
     private ContaoUserProvider $userProvider;
+    private string $hostedDomain;
 
     public function __construct(ContaoUserProvider $userProvider, string $hostedDomain)
     {
@@ -79,6 +81,7 @@ class LoginController extends AbstractController
 
         if (!$code) {
             $id_token = $request->request->get('credential');
+            Assert::nullOrString($id_token);
             $payload = $client->verifyIdToken($id_token);
 
             if (!$payload || $payload['hd'] !== $this->hostedDomain) {

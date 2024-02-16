@@ -12,7 +12,7 @@ use Symfony\Component\HttpKernel\DependencyInjection\ConfigurableExtension;
 class ContaoGoogleSsoExtension extends ConfigurableExtension
 {
     /**
-     * @param array{client_id: string, client_secret: string} $mergedConfig
+     * @param array{client_id: string, client_secret: string, hosted_domain: string} $mergedConfig
      *
      * @throws \Exception
      */
