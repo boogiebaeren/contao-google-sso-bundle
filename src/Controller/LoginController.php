@@ -82,6 +82,10 @@ class LoginController extends AbstractController
             /** @var ?string $id_token */
             $id_token = $request->request->get('credential');
 
+            if ($request->cookies->get('g_csrf_token') !== $request->request->get('g_csrf_token')) {
+                throw new \Exception('CSRF token mismatch');
+            }
+
             $payload = $client->verifyIdToken($id_token);
 
             if (!$payload || $payload['hd'] !== $this->hostedDomain) {
