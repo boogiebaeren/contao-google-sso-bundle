@@ -128,7 +128,7 @@ class LoginController extends AbstractController
 
         $session = $request->getSession();
 
-        $user = $this->userProvider->loadUserByIdentifier($userInDb->username);
+        $user = $this->userProvider->loadUserByIdentifier($userInDb['username']);
 
         if ($user->locked) {
             $logger->log(
