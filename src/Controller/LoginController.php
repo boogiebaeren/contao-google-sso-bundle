@@ -110,7 +110,7 @@ class LoginController extends AbstractController
             ]
         )->fetchAssociative();
 
-        if (!$userInDb) {
+        if ($userInDb === false) {
             $logger->log(
                 LogLevel::INFO,
                 'User "'.$userinfo->email.'" was not found in the database',
@@ -124,6 +124,9 @@ class LoginController extends AbstractController
                 $userinfo->email,
                 'de'
             );
+        }
+        if (!array_key_exists($userInDb, 'username')) {
+            throw new Exception('Logic error: Username should exist on all users but wasn\'t for '.$userinfo->email);
         }
 
         $session = $request->getSession();
