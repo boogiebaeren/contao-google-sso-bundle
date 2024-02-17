@@ -125,6 +125,7 @@ class LoginController extends AbstractController
                 'de'
             );
         }
+
         if (!\array_key_exists($userInDb, 'username')) {
             throw new Exception('Logic error: Username should exist on all users but wasn\'t for '.$userinfo->email);
         }
