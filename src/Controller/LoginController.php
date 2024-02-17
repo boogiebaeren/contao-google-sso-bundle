@@ -122,7 +122,7 @@ class LoginController extends AbstractController
                 $userinfo->email,
                 $userinfo->name,
                 $userinfo->email,
-                $userinfo->getLocale()
+                'de'
             );
         }
 
