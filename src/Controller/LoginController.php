@@ -116,18 +116,22 @@ class LoginController extends AbstractController
                 'User "'.$userinfo->email.'" was not found in the database',
                 ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
             );
+            $username = strtok($userinfo->email, '@');
+            if (!$username) {
+                throw new \Exception('Email has no @ symbol: '.$userinfo->email);
+            }
             $this->persistUser(
                 $databaseConnection,
                 $passwordHasherFactory,
-                strtok($userinfo->email, '@'),
+                $username,
                 $userinfo->name,
                 $userinfo->email,
                 'de'
             );
         }
 
-        if (!\array_key_exists($userInDb, 'username')) {
-            throw new Exception('Logic error: Username should exist on all users but wasn\'t for '.$userinfo->email);
+        if (!\array_key_exists('username', $userInDb)) {
+            throw new \Exception('Logic error: Username should exist on all users but wasn\'t for '.$userinfo->email);
         }
 
         $session = $request->getSession();
