@@ -130,10 +130,10 @@ class LoginController extends AbstractController
                 'de'
             );
         } else {
-            if (!\array_key_exists('username', $userInDb)) {
+            if (!\array_key_exists('username', $userInDb) || !\is_string($userInDb['username'])) {
                 throw new \Exception('Logic error: Username should exist on all users but wasn\'t for '.$userinfo->email);
             }
-            $username = (string) $userInDb['username'];
+            $username = $userInDb['username'];
         }
 
         $session = $request->getSession();
