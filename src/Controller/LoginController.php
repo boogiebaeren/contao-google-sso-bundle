@@ -129,15 +129,16 @@ class LoginController extends AbstractController
                 $userinfo->email,
                 'de'
             );
-        }
-
-        if (!\array_key_exists('username', $userInDb)) {
-            throw new \Exception('Logic error: Username should exist on all users but wasn\'t for '.$userinfo->email);
+        } else {
+            if (!\array_key_exists('username', $userInDb)) {
+                throw new \Exception('Logic error: Username should exist on all users but wasn\'t for '.$userinfo->email);
+            }
+            $username = $userInDb['username'];
         }
 
         $session = $request->getSession();
 
-        $user = $this->userProvider->loadUserByIdentifier($userInDb['username']);
+        $user = $this->userProvider->loadUserByIdentifier($username);
 
         if ($user->locked) {
             $logger->log(
