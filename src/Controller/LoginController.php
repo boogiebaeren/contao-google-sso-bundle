@@ -104,9 +104,9 @@ class LoginController extends AbstractController
         }
 
         $userInDb = $databaseConnection->executeQuery(
-            'SELECT * FROM tl_user WHERE username = :username',
+            'SELECT * FROM tl_user WHERE email = :email',
             [
-                'username' => $userinfo->email,
+                'email' => $userinfo->email,
             ]
         )->fetchOne();
 
@@ -119,7 +119,7 @@ class LoginController extends AbstractController
             $this->persistUser(
                 $databaseConnection,
                 $passwordHasherFactory,
-                $userinfo->email,
+                strtok($userinfo->email, '@'),
                 $userinfo->name,
                 $userinfo->email,
                 'de'
