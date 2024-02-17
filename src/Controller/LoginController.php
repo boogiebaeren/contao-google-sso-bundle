@@ -117,6 +117,7 @@ class LoginController extends AbstractController
                 ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
             );
             $username = strtok($userinfo->email, '@');
+
             if (!$username) {
                 throw new \Exception('Email has no @ symbol: '.$userinfo->email);
             }
