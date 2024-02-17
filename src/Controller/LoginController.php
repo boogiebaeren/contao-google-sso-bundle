@@ -108,7 +108,7 @@ class LoginController extends AbstractController
             [
                 'email' => $userinfo->email,
             ]
-        )->fetchOne();
+        )->fetchAssociative();
 
         if (!$userInDb) {
             $logger->log(
