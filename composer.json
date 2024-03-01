@@ -15,7 +15,7 @@
     "contao/core-bundle": "^4.13 || ^5",
     "symfony/config": "^5.4",
     "symfony/dependency-injection": "^5.4",
-    "symfony/http-kernel": "^5.4",
+    "symfony/http-kernel": "^6.0",
     "google/apiclient": "^2.15",
     "ext-json": "*"
   },
