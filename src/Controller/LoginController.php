@@ -54,8 +54,10 @@ class LoginController extends AbstractController
                 $request->getPathInfo().
                 (null !== ($qs = $request->server->get('QUERY_STRING')) ? '?'.$qs : '');
 
-            if ($request->query->has('redirect') && $uriSigner->check($uri)) {
-                return $this->redirect($request->query->get('redirect'));
+            $redirect = $request->query->get('redirect');
+
+            if (\is_string($redirect) && $uriSigner->check($uri)) {
+                return $this->redirect($redirect);
             }
 
             return $this->redirectToRoute('contao_backend');
