@@ -52,7 +52,33 @@
       "dealerdirect/phpcodesniffer-composer-installer": true,
       "contao/manager-plugin": true
     },
-    "archive-format": "zip"
+    "archive-format": "zip",
+    "audit": {
+      "ignore": {
+        "PKSA-cvfh-n5dv-w5t9": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-4788-1fwx-c4gc": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-wrr4-414y-fqmj": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-snk8-7c3n-1x4z": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-f8tt-pn3h-s2tw": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-3p5h-vgz7-458z": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-wjhx-cdbz-9x61": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-66g4-yhz3-k3zh": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-pmyp-m45j-62p1": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-8psg-sb44-9n6y": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-gkh9-zxxg-dpvd": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-5k7g-byhd-8xrm": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-rk65-kfm6-21d9": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-bxmw-zt4x-f182": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-7hz7-f163-3mdr": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-g1qg-mn7d-638g": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-kc45-s13v-qqqk": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-wth6-rm9c-yh3w": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-jc9p-83z1-zst8": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
+        "PKSA-qv5y-crcz-9nxw": "Transitive via contao/core-bundle 4.13, no fixed otphp release for this branch",
+        "PKSA-kbc7-dq62-pt7d": "Transitive via contao/core-bundle 4.13, no fixed otphp release for this branch",
+        "PKSA-4g5g-4rkv-myqs": "Transitive via contao/core-bundle 4.13, no fixed svg-sanitize release for this branch"
+      }
+    }
   },
   "scripts": {
     "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
