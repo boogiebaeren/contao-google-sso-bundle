@@ -8,6 +8,7 @@ use Contao\BackendUser;
 use Contao\CoreBundle\Controller\AbstractController;
 use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\CoreBundle\Security\User\ContaoUserProvider;
+use Contao\CoreBundle\Security\User\UserChecker;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DBALException;
 use Google\Client;
@@ -24,17 +25,18 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
+use Symfony\Component\Security\Core\Exception\AccountStatusException;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
 class LoginController extends AbstractController
 {
     private ContaoUserProvider $userProvider;
-    private string $hostedDomain;
+    private UserChecker $userChecker;
 
-    public function __construct(ContaoUserProvider $userProvider, string $hostedDomain)
+    public function __construct(ContaoUserProvider $userProvider, UserChecker $userChecker)
     {
         $this->userProvider = $userProvider;
-        $this->hostedDomain = $hostedDomain;
+        $this->userChecker = $userChecker;
     }
 
     /**
@@ -59,7 +61,10 @@ class LoginController extends AbstractController
             return $this->redirectToRoute('contao_backend');
         }
 
-        return $this->redirect($this->googleOAuthUrl($client));
+        $state = bin2hex(random_bytes(32));
+        $request->getSession()->set('google_sso_state', $state);
+
+        return $this->redirect($this->googleOAuthUrl($client, $state));
     }
 
     /**
@@ -88,11 +93,19 @@ class LoginController extends AbstractController
 
             $payload = $client->verifyIdToken($id_token);
 
-            if (!$payload || $payload['hd'] !== $this->hostedDomain) {
+            if (!$payload) {
                 throw new \Exception('Token was invalid');
             }
             $userinfo = (object) $payload;
         } else {
+            $session = $request->getSession();
+            $expectedState = $session->remove('google_sso_state');
+            $state = $request->query->get('state');
+
+            if (!\is_string($expectedState) || '' === $expectedState || $state !== $expectedState) {
+                throw new \Exception('CSRF token mismatch');
+            }
+
             $response_token = $client->fetchAccessTokenWithAuthCode($code);
 
             if (!\array_key_exists('access_token', $response_token)) {
@@ -140,15 +153,28 @@ class LoginController extends AbstractController
 
         $user = $this->userProvider->loadUserByIdentifier($username);
 
-        if ($user->locked) {
+        try {
+            $this->userChecker->checkPreAuth($user);
+        } catch (AccountStatusException $exception) {
             $logger->log(
                 LogLevel::INFO,
-                'User "'.$userinfo->email.'" is locked',
+                'User "'.$userinfo->email.'" cannot log in via SSO: '.$exception->getMessage(),
                 ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
             );
 
             return $this->redirectToRoute('contao_backend');
         }
+
+        if ($user->useTwoFactor) {
+            $logger->log(
+                LogLevel::INFO,
+                'User "'.$userinfo->email.'" has two-factor authentication enabled, falling back to the normal login',
+                ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
+            );
+
+            return $this->redirectToRoute('contao_backend');
+        }
+
         $user->loginAttempts = 0;
         $user->lastLogin = $user->currentLogin;
         $user->currentLogin = time();
@@ -172,7 +198,7 @@ class LoginController extends AbstractController
         return $this->redirectToRoute('contao_backend');
     }
 
-    private function googleOAuthUrl(Client $client): string
+    private function googleOAuthUrl(Client $client, string $state): string
     {
         $client->addScope([Oauth2::USERINFO_EMAIL, Oauth2::USERINFO_PROFILE]);
         $client->setRedirectUri($this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
@@ -180,6 +206,7 @@ class LoginController extends AbstractController
         // your app can refresh the access token without user interaction.
         $client->setAccessType('offline');
         $client->setPrompt('select_account');
+        $client->setState($state);
 
         return $client->createAuthUrl();
     }
