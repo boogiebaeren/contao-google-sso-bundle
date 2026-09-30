@@ -12,7 +12,7 @@ use Symfony\Component\HttpKernel\DependencyInjection\ConfigurableExtension;
 class ContaoGoogleSsoExtension extends ConfigurableExtension
 {
     /**
-     * @param array{client_id: string, client_secret: string, hosted_domain: string} $mergedConfig
+     * @param array{client_id: string, client_secret: string} $mergedConfig
      *
      * @throws \Exception
      */
@@ -20,9 +20,6 @@ class ContaoGoogleSsoExtension extends ConfigurableExtension
     {
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yaml');
-
-        $definition = $container->getDefinition('BoogieBaeren\ContaoGoogleSsoBundle\Controller\LoginController');
-        $definition->replaceArgument('$hostedDomain', $mergedConfig['hosted_domain']);
 
         $definition = $container->getDefinition('google.sso');
         $definition->replaceArgument('$config', [
