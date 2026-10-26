@@ -27,9 +27,12 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Exception\AccountStatusException;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
+use Symfony\Component\Security\Http\Util\TargetPathTrait;
 
 class LoginController extends AbstractController
 {
+    use TargetPathTrait;
+
     private ContaoUserProvider $userProvider;
     private UserChecker $userChecker;
 
@@ -47,20 +50,25 @@ class LoginController extends AbstractController
     {
         $this->initializeContaoFramework();
 
+        // Keep the original query string order for signature validation.
+        $uri = $request->getSchemeAndHttpHost().
+            $request->getBaseUrl().
+            $request->getPathInfo().
+            (null !== ($qs = $request->server->get('QUERY_STRING')) ? '?'.$qs : '');
+
+        $redirect = $request->query->get('redirect');
+        $targetPath = \is_string($redirect) && $uriSigner->check($uri) ? $redirect : null;
+
         if ($this->isGranted('IS_AUTHENTICATED_FULLY')) {
-            // We cannot use $request->getUri() here as we want to work with the original URI (no query string reordering)
-            $uri = $request->getSchemeAndHttpHost().
-                $request->getBaseUrl().
-                $request->getPathInfo().
-                (null !== ($qs = $request->server->get('QUERY_STRING')) ? '?'.$qs : '');
-
-            $redirect = $request->query->get('redirect');
-
-            if (\is_string($redirect) && $uriSigner->check($uri)) {
-                return $this->redirect($redirect);
+            if (null !== $targetPath) {
+                return $this->redirect($targetPath);
             }
 
             return $this->redirectToRoute('contao_backend');
+        }
+
+        if (null !== $targetPath) {
+            $this->saveTargetPath($request->getSession(), 'contao_backend', $targetPath);
         }
 
         $state = bin2hex(random_bytes(32));
@@ -186,6 +194,8 @@ class LoginController extends AbstractController
         $tokenStorage->setToken($response_token);
 
         $session->set('_security_'.'contao_backend', serialize($response_token));
+        $targetPath = $this->getTargetPath($session, 'contao_backend');
+        $this->removeTargetPath($session, 'contao_backend');
         $session->save();
 
         //Somehow this should be triggered: Contao\CoreBundle\Security\Authentication\AuthenticationSuccessHandler::onAuthenticationSuccess()
@@ -197,7 +207,7 @@ class LoginController extends AbstractController
             ['contao' => new ContaoContext(__METHOD__, 'ACCESS')]
         );
 
-        return $this->redirectToRoute('contao_backend');
+        return null !== $targetPath ? $this->redirect($targetPath) : $this->redirectToRoute('contao_backend');
     }
 
     private function googleOAuthUrl(Client $client, string $state): string
