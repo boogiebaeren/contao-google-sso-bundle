@@ -55,6 +55,10 @@
     "archive-format": "zip",
     "audit": {
       "ignore": {
+        "PKSA-bmqh-y7sv-p1st": "Accepted advisory exception to retain Contao 4.13 compatibility",
+        "PKSA-s71c-hg32-kv3f": "Accepted advisory exception to retain Contao 4.13 compatibility",
+        "PKSA-6ymc-kdpm-qx87": "Accepted advisory exception to retain Contao 4.13 compatibility",
+        "PKSA-6j5h-bxmj-94h9": "Accepted advisory exception to retain Contao 4.13 compatibility",
         "PKSA-cvfh-n5dv-w5t9": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
         "PKSA-4788-1fwx-c4gc": "Contao 4.13 is EOL, no fixed 4.13.x release exists",
         "PKSA-wrr4-414y-fqmj": "Contao 4.13 is EOL, no fixed 4.13.x release exists",

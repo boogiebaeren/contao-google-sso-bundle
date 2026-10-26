@@ -28,12 +28,14 @@ class LoginControllerTest extends TestCase
     /**
      * @dataProvider redirectProvider
      */
-    public function testLoginPreservesOnlySignedRedirects(bool $signed, bool $authenticated): void
+    public function testLoginPreservesOnlySignedRedirects(bool $signed, bool $authenticated, bool $forwarded): void
     {
-        $target = 'https://example.com/contao?do=article&act=edit&id=42';
+        $target = 'https://example.com/contao/preview?page=787';
         $signer = new UriSigner('test-secret');
-        $url = 'https://example.com/contao/login_sso?redirect='.urlencode($target);
-        $request = Request::create($signed ? $signer->sign($url) : $url);
+        $path = $forwarded ? '/contao/login' : '/contao/login_sso';
+        $url = 'https://example.com'.$path.'?redirect='.urlencode($target);
+        $url = $signed ? $signer->sign($url) : $url;
+        $request = Request::create($forwarded ? str_replace('/contao/login?', '/contao/login_sso?', $url) : $url);
         $session = new Session(new MockArraySessionStorage());
         $request->setSession($session);
 
@@ -44,13 +46,16 @@ class LoginControllerTest extends TestCase
         ;
         $controller
             ->method('isGranted')
-            ->willReturn($authenticated);
+            ->willReturn($authenticated)
+        ;
         $controller
             ->method('generateUrl')
             ->willReturnMap([
-            ['contao_backend', [], UrlGeneratorInterface::ABSOLUTE_PATH, '/contao'],
-            ['google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL, 'https://example.com/contao/login_sso/redirect'],
-        ]);
+                ['contao_backend', [], UrlGeneratorInterface::ABSOLUTE_PATH, '/contao'],
+                ['contao_backend_login', [], UrlGeneratorInterface::ABSOLUTE_URL, 'https://example.com/contao/login'],
+                ['google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL, 'https://example.com/contao/login_sso/redirect'],
+            ])
+        ;
 
         $response = $controller->login(new Client(), $request, $signer);
 
@@ -63,11 +68,20 @@ class LoginControllerTest extends TestCase
     }
 
     /**
-     * @return array<array{bool, bool}>
+     * @return array<array{bool, bool, bool}>
      */
     public static function redirectProvider(): array
     {
-        return [[true, false], [false, false], [true, true], [false, true]];
+        return [
+            [true, false, false],
+            [false, false, false],
+            [true, true, false],
+            [false, true, false],
+            [true, false, true],
+            [false, false, true],
+            [true, true, true],
+            [false, true, true],
+        ];
     }
 
     /**
@@ -89,20 +103,24 @@ class LoginControllerTest extends TestCase
         $user = $this->createMock(BackendUser::class);
         $user
             ->method('getRoles')
-            ->willReturn(['ROLE_USER']);
+            ->willReturn(['ROLE_USER'])
+        ;
         $user
             ->expects($this->once())
-            ->method('save');
+            ->method('save')
+        ;
         $provider = $this->createMock(ContaoUserProvider::class);
         $provider
             ->method('loadUserByIdentifier')
             ->with('test-user')
-            ->willReturn($user);
+            ->willReturn($user)
+        ;
         $checker = $this->createMock(UserChecker::class);
         $checker
             ->expects($this->once())
             ->method('checkPreAuth')
-            ->with($user);
+            ->with($user)
+        ;
 
         $controller = $this->getMockBuilder(LoginController::class)
             ->setConstructorArgs([$provider, $checker])
@@ -111,20 +129,24 @@ class LoginControllerTest extends TestCase
         ;
         $controller
             ->method('generateUrl')
-            ->willReturn('/contao');
+            ->willReturn('/contao')
+        ;
 
         $client = $this->createMock(Client::class);
         $client
             ->method('verifyIdToken')
-            ->willReturn(['email' => 'test@example.com']);
+            ->willReturn(['email' => 'test@example.com'])
+        ;
         $result = $this->createMock(Result::class);
         $result
             ->method('fetchAssociative')
-            ->willReturn(['username' => 'test-user']);
+            ->willReturn(['username' => 'test-user'])
+        ;
         $connection = $this->createMock(Connection::class);
         $connection
             ->method('executeQuery')
-            ->willReturn($result);
+            ->willReturn($result)
+        ;
         $tokens = new TokenStorage();
 
         $response = $controller->loginAction(
@@ -150,6 +172,6 @@ class LoginControllerTest extends TestCase
      */
     public static function targetProvider(): array
     {
-        return [[null], ['https://example.com/contao?do=article&act=edit&id=42']];
+        return [[null], ['https://example.com/contao?do=article&act=edit&id=42'], ['https://example.com/contao/preview?page=787']];
     }
 }

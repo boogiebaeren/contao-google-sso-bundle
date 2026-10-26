@@ -57,7 +57,17 @@ class LoginController extends AbstractController
             (null !== ($qs = $request->server->get('QUERY_STRING')) ? '?'.$qs : '');
 
         $redirect = $request->query->get('redirect');
-        $targetPath = \is_string($redirect) && $uriSigner->check($uri) ? $redirect : null;
+        $targetPath = null;
+
+        if (\is_string($redirect)) {
+            // Login redirects may forward the query signed for Contao's original login route.
+            $loginUri = $this->generateUrl('contao_backend_login', [], UrlGeneratorInterface::ABSOLUTE_URL).
+                (null !== $qs ? '?'.$qs : '');
+
+            if ($uriSigner->check($uri) || $uriSigner->check($loginUri)) {
+                $targetPath = $redirect;
+            }
+        }
 
         if ($this->isGranted('IS_AUTHENTICATED_FULLY')) {
             if (null !== $targetPath) {
