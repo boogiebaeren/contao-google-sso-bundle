@@ -22,7 +22,21 @@ You then need to add the following configuration to your `config/config.yaml` fi
 contao_google_sso:
   client_id: '%env(GOOGLE_SSO_CLIENTID)%'
   client_secret: '%env(GOOGLE_SSO_CLIENTSECRET)%'
+  # Google Workspace domains that may log in. Both the "hd" claim of the Google
+  # account and the domain of its email address must be in this list.
+  allowed_domains:
+    - 'example.com'
+    - 'example.org'
+  # Create a backend user (without admin rights and groups) on the first SSO login
+  # if no user with that email exists. Disabled by default.
+  auto_create_users: false
 ```
+
+`client_id`, `client_secret` and `allowed_domains` are required. The login refuses to run if the
+client id resolves to an empty value at runtime.
+
+Users are matched to existing Contao backend users by email address. Only Google accounts with a verified
+email that belong to one of the `allowed_domains` are accepted, regardless of the OAuth consent screen setting.
 
 You should also add the following to your `composer.json` file to remove all unused Google Services:
 
@@ -45,10 +59,13 @@ then create a new OAuth client.
 ![img.png](.github/img/create-oauth-client.png)
 Then select "Web application" as the application type, enter a name and add an authorized redirection
 uri `https://<your-domain>/contao/login_sso/redirect`.
+If your Contao installation serves several hostnames, add one redirect uri per hostname
+(e.g. `https://www.example.com/contao/login_sso/redirect` and `https://www.example.org/contao/login_sso/redirect`).
 After you've created the OAuth client, you can copy the client id and client secret into a `.env.local` file in the
 root folder of your Contao installation.
 
-**Don't forget to set the usertype to "intern" in the OAuth consent screen or otherwise any google user could log in!**
+**Set the usertype to "intern" in the OAuth consent screen.** The bundle additionally enforces `allowed_domains`,
+but the consent screen setting is an important second line of defence.
 ![img.png](.github/img/change-to-intern-users-only.png)
 
 After you've configured the environment variables, you can log in using the new login
@@ -78,6 +95,10 @@ For this, you can create a `be_login.html5` file under your `templates` folder a
 </div>
 <?php $this->endblock(); ?>
 ```
+
+On a multi-domain installation use `<?= \Contao\Environment::get('base') ?>contao/login_sso/redirect` as
+`data-login_uri` so the login posts back to the hostname the user is currently on, and add every hostname as an
+"Authorized JavaScript origin" on the OAuth client.
 
 # References
 This bundle was inspired by https://github.com/BROCKHAUS-AG/contao-microsoft-sso-bundle and uses a similar flow.  
