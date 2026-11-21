@@ -96,6 +96,6 @@
     "zip": "composer archive",
     "check-style": "vendor/bin/ecs check src --no-interaction --ansi",
     "analyze": "vendor/bin/phpstan analyze",
-    "test": "vendor/bin/phpunit"
+    "test": "vendor/bin/phpunit tests"
   }
 }
