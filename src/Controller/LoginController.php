@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BoogieBaeren\ContaoGoogleSsoBundle\Controller;
 
+use BoogieBaeren\ContaoGoogleSsoBundle\EventListener\LogoutListener;
 use Contao\BackendUser;
 use Contao\CoreBundle\Controller\AbstractController;
 use Contao\CoreBundle\Monolog\ContaoContext;
@@ -16,6 +17,7 @@ use Google\Service\Oauth2;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -116,7 +118,15 @@ class LoginController extends AbstractController
         $session->set(self::SESSION_NONCE, $nonce);
         $session->set(self::SESSION_CODE_VERIFIER, $codeVerifier);
 
-        return $this->redirect($this->googleOAuthUrl($client, $state, $nonce, $codeVerifier));
+        // Right after a logout, always show the account chooser, or Google signs the user straight back in.
+        $loggedOut = $request->cookies->has(LogoutListener::COOKIE);
+        $response = $this->redirect($this->googleOAuthUrl($client, $state, $nonce, $codeVerifier, $this->selectAccount || $loggedOut));
+
+        if ($loggedOut) {
+            $response->headers->clearCookie(LogoutListener::COOKIE, '/', null, $request->isSecure(), true, Cookie::SAMESITE_LAX);
+        }
+
+        return $response;
     }
 
     /**
@@ -337,7 +347,7 @@ class LoginController extends AbstractController
         }
     }
 
-    private function googleOAuthUrl(Client $client, string $state, string $nonce, string $codeVerifier): string
+    private function googleOAuthUrl(Client $client, string $state, string $nonce, string $codeVerifier, bool $selectAccount): string
     {
         $client->setScopes(['openid', Oauth2::USERINFO_EMAIL, Oauth2::USERINFO_PROFILE]);
         $client->setRedirectUri($this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
@@ -345,7 +355,7 @@ class LoginController extends AbstractController
         $client->setAccessType('online');
         // Without a prompt, Google signs in without a click if the browser has only one
         // matching account, and still shows the account chooser if there are several.
-        if ($this->selectAccount) {
+        if ($selectAccount) {
             $client->setPrompt('select_account');
         }
         $client->setState($state);

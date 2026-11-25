@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BoogieBaeren\ContaoGoogleSsoBundle\Tests\Controller;
 
 use BoogieBaeren\ContaoGoogleSsoBundle\Controller\LoginController;
+use BoogieBaeren\ContaoGoogleSsoBundle\EventListener\LogoutListener;
 use Contao\BackendUser;
 use Contao\CoreBundle\Security\User\ContaoUserProvider;
 use Contao\CoreBundle\Security\User\UserChecker;
@@ -15,6 +16,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -82,9 +84,9 @@ class LoginControllerTest extends TestCase
     /**
      * @dataProvider selectAccountProvider
      */
-    public function testAccountChooserCanBeTurnedOff(?bool $selectAccount, bool $expectPrompt): void
+    public function testAccountChooserCanBeTurnedOff(?bool $selectAccount, bool $loggedOut, bool $expectPrompt): void
     {
-        $request = Request::create('https://example.com/contao/login_sso');
+        $request = Request::create('https://example.com/contao/login_sso', cookies: $loggedOut ? [LogoutListener::COOKIE => '1'] : []);
         $request->setSession(new Session(new MockArraySessionStorage()));
         $arguments = [$this->createMock(ContaoUserProvider::class), $this->createMock(UserChecker::class), self::CLIENT_ID, self::DOMAINS];
 
@@ -107,21 +109,30 @@ class LoginControllerTest extends TestCase
             ->willReturn('https://example.com/contao/login_sso/redirect')
         ;
 
-        $authUrl = $controller->login(new Client(['client_id' => self::CLIENT_ID]), $request, new UriSigner('test-secret'))->getTargetUrl();
+        $response = $controller->login(new Client(['client_id' => self::CLIENT_ID]), $request, new UriSigner('test-secret'));
+        $authUrl = $response->getTargetUrl();
 
         $this->assertSame($expectPrompt, str_contains($authUrl, 'prompt=select_account'));
         $this->assertStringContainsString('state=', $authUrl);
+
+        // The logout marker is used once, then cleared.
+        $cleared = array_filter(
+            $response->headers->getCookies(),
+            static fn (Cookie $cookie): bool => LogoutListener::COOKIE === $cookie->getName() && $cookie->isCleared(),
+        );
+        $this->assertSame($loggedOut, [] !== $cleared);
     }
 
     /**
-     * @return array<string, array{bool|null, bool}>
+     * @return array<string, array{bool|null, bool, bool}>
      */
     public static function selectAccountProvider(): array
     {
         return [
-            'default' => [null, true],
-            'enabled' => [true, true],
-            'disabled' => [false, false],
+            'default' => [null, false, true],
+            'enabled' => [true, false, true],
+            'disabled' => [false, false, false],
+            'disabled, right after logout' => [false, true, true],
         ];
     }
 

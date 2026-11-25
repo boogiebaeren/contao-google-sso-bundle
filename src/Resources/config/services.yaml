@@ -13,6 +13,13 @@ services:
       $userProvider: '@contao.security.backend_user_provider'
       $userChecker: '@contao.security.user_checker'
 
+  # Runs after Contao's logout listener (priority 0), which sets the redirect response.
+  BoogieBaeren\ContaoGoogleSsoBundle\EventListener\LogoutListener:
+    arguments:
+      $scopeMatcher: '@contao.routing.scope_matcher'
+    tags:
+      - { name: kernel.event_listener, priority: -16 }
+
   google.sso:
     class: Google\Client
     arguments:

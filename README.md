@@ -33,7 +33,9 @@ contao_google_sso:
   # Always show Google's account chooser. Set it to false to sign in without a click
   # when the browser is signed in to only one matching Google account, for example when
   # the frontend preview switches to another domain of a multi-domain installation.
-  # With several accounts the chooser still appears. Enabled by default.
+  # With several accounts the chooser still appears, and so does it on the first login
+  # after a backend logout, so a logout does not sign the user straight back in.
+  # Enabled by default.
   select_account: true
 ```
 
