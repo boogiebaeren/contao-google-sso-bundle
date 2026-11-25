@@ -48,10 +48,12 @@ class LoginController extends AbstractController
 
     private bool $autoCreateUsers;
 
+    private bool $selectAccount;
+
     /**
      * @param array<string> $allowedDomains
      */
-    public function __construct(ContaoUserProvider $userProvider, UserChecker $userChecker, string $clientId, array $allowedDomains, bool $autoCreateUsers = false)
+    public function __construct(ContaoUserProvider $userProvider, UserChecker $userChecker, string $clientId, array $allowedDomains, bool $autoCreateUsers = false, bool $selectAccount = true)
     {
         $this->userProvider = $userProvider;
         $this->userChecker = $userChecker;
@@ -61,6 +63,7 @@ class LoginController extends AbstractController
             $allowedDomains
         )));
         $this->autoCreateUsers = $autoCreateUsers;
+        $this->selectAccount = $selectAccount;
     }
 
     /**
@@ -340,7 +343,11 @@ class LoginController extends AbstractController
         $client->setRedirectUri($this->generateUrl('google_sso_login_redirect', [], UrlGeneratorInterface::ABSOLUTE_URL));
         // We only need the identity once, no refresh token.
         $client->setAccessType('online');
-        $client->setPrompt('select_account');
+        // Without a prompt, Google signs in without a click if the browser has only one
+        // matching account, and still shows the account chooser if there are several.
+        if ($this->selectAccount) {
+            $client->setPrompt('select_account');
+        }
         $client->setState($state);
 
         if (1 === \count($this->allowedDomains)) {

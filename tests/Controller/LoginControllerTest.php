@@ -80,6 +80,52 @@ class LoginControllerTest extends TestCase
     }
 
     /**
+     * @dataProvider selectAccountProvider
+     */
+    public function testAccountChooserCanBeTurnedOff(?bool $selectAccount, bool $expectPrompt): void
+    {
+        $request = Request::create('https://example.com/contao/login_sso');
+        $request->setSession(new Session(new MockArraySessionStorage()));
+        $arguments = [$this->createMock(ContaoUserProvider::class), $this->createMock(UserChecker::class), self::CLIENT_ID, self::DOMAINS];
+
+        if (null !== $selectAccount) {
+            $arguments[] = false;
+            $arguments[] = $selectAccount;
+        }
+
+        $controller = $this->getMockBuilder(LoginController::class)
+            ->setConstructorArgs($arguments)
+            ->onlyMethods(['initializeContaoFramework', 'isGranted', 'generateUrl'])
+            ->getMock()
+        ;
+        $controller
+            ->method('isGranted')
+            ->willReturn(false)
+        ;
+        $controller
+            ->method('generateUrl')
+            ->willReturn('https://example.com/contao/login_sso/redirect')
+        ;
+
+        $authUrl = $controller->login(new Client(['client_id' => self::CLIENT_ID]), $request, new UriSigner('test-secret'))->getTargetUrl();
+
+        $this->assertSame($expectPrompt, str_contains($authUrl, 'prompt=select_account'));
+        $this->assertStringContainsString('state=', $authUrl);
+    }
+
+    /**
+     * @return array<string, array{bool|null, bool}>
+     */
+    public static function selectAccountProvider(): array
+    {
+        return [
+            'default' => [null, true],
+            'enabled' => [true, true],
+            'disabled' => [false, false],
+        ];
+    }
+
+    /**
      * @return array<array{bool, bool, bool}>
      */
     public static function redirectProvider(): array

@@ -35,6 +35,10 @@ class Configuration implements ConfigurationInterface
             ->info('Create a backend user on first SSO login if no user with that email exists.')
             ->defaultFalse()
             ->end()
+            ->booleanNode('select_account')
+            ->info('Always show Google\'s account chooser. If false, Google signs in without a click when the browser has only one matching account.')
+            ->defaultTrue()
+            ->end()
             ->end()
         ;
 

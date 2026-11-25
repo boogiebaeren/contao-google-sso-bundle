@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\DependencyInjection\ConfigurableExtension;
 class ContaoGoogleSsoExtension extends ConfigurableExtension
 {
     /**
-     * @param array{client_id: string, client_secret: string, allowed_domains: list<string>, auto_create_users: bool} $mergedConfig
+     * @param array{client_id: string, client_secret: string, allowed_domains: list<string>, auto_create_users: bool, select_account: bool} $mergedConfig
      *
      * @throws \Exception
      */
@@ -31,5 +31,6 @@ class ContaoGoogleSsoExtension extends ConfigurableExtension
         $controller->setArgument('$clientId', $mergedConfig['client_id']);
         $controller->setArgument('$allowedDomains', $mergedConfig['allowed_domains']);
         $controller->setArgument('$autoCreateUsers', $mergedConfig['auto_create_users']);
+        $controller->setArgument('$selectAccount', $mergedConfig['select_account']);
     }
 }

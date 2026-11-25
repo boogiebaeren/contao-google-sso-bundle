@@ -30,6 +30,11 @@ contao_google_sso:
   # Create a backend user (without admin rights and groups) on the first SSO login
   # if no user with that email exists. Disabled by default.
   auto_create_users: false
+  # Always show Google's account chooser. Set it to false to sign in without a click
+  # when the browser is signed in to only one matching Google account, for example when
+  # the frontend preview switches to another domain of a multi-domain installation.
+  # With several accounts the chooser still appears. Enabled by default.
+  select_account: true
 ```
 
 `client_id`, `client_secret` and `allowed_domains` are required. The login refuses to run if the
