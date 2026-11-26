@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\UriSigner;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\Routing\Annotation\Route;
@@ -164,14 +165,25 @@ class LoginController extends AbstractController
 
             $claims = $this->verifyIdToken($client, $idToken, null);
         } else {
-            $expectedState = $session->remove(self::SESSION_STATE);
+            $state = $request->query->get('state');
+            if (!\is_string($state) || '' === $state) {
+                throw new BadRequestHttpException('CSRF token mismatch');
+            }
+
+            $expectedState = $session->get(self::SESSION_STATE);
+            if (!\is_string($expectedState) || '' === $expectedState) {
+                // A restored tab can replay a callback after its state has been consumed or expired.
+                return $this->redirectToRoute('contao_backend');
+            }
+
+            if (!hash_equals($expectedState, $state)) {
+                // Keep any newer login attempt in the session.
+                throw new BadRequestHttpException('CSRF token mismatch');
+            }
+
+            $session->remove(self::SESSION_STATE);
             $expectedNonce = $session->remove(self::SESSION_NONCE);
             $codeVerifier = $session->remove(self::SESSION_CODE_VERIFIER);
-            $state = $request->query->get('state');
-
-            if (!\is_string($expectedState) || '' === $expectedState || !\is_string($state) || !hash_equals($expectedState, $state)) {
-                throw new \Exception('CSRF token mismatch');
-            }
 
             if (!\is_string($code) || '' === $code || !\is_string($expectedNonce) || !\is_string($codeVerifier)) {
                 throw new \Exception('Invalid authorization response');

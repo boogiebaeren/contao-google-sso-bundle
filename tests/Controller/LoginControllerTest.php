@@ -22,6 +22,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\UriSigner;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -228,6 +229,64 @@ class LoginControllerTest extends TestCase
         return [[null, null], ['', ''], ['a', null], [null, 'a'], ['a', 'b']];
     }
 
+    public function testCodeFlowRedirectsFromExpiredCallback(): void
+    {
+        $request = Request::create('https://example.com/contao/login_sso/redirect?code=old-code&state=old-state');
+        $request->setSession(new Session(new MockArraySessionStorage()));
+
+        $response = $this->runLoginAction($request, $this->claims(), false);
+
+        self::assertInstanceOf(RedirectResponse::class, $response);
+        self::assertSame('/contao', $response->getTargetUrl());
+    }
+
+    public function testCodeFlowPreservesNewerAttemptWhenAnOldCallbackReturns(): void
+    {
+        $request = Request::create('https://example.com/contao/login_sso/redirect?code=old-code&state=old-state');
+        $session = new Session(new MockArraySessionStorage());
+        $session->set('google_sso_state', 'new-state');
+        $session->set('google_sso_nonce', 'new-nonce');
+        $session->set('google_sso_code_verifier', 'new-verifier');
+        $request->setSession($session);
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('CSRF token mismatch');
+
+        try {
+            $this->runLoginAction($request, $this->claims(), false);
+        } finally {
+            self::assertSame('new-state', $session->get('google_sso_state'));
+            self::assertSame('new-nonce', $session->get('google_sso_nonce'));
+            self::assertSame('new-verifier', $session->get('google_sso_code_verifier'));
+        }
+    }
+
+    public function testCodeFlowConsumesStateOnSuccessfulCallback(): void
+    {
+        $request = Request::create('https://example.com/contao/login_sso/redirect?code=code&state=state');
+        $session = new Session(new MockArraySessionStorage());
+        $session->set('google_sso_state', 'state');
+        $session->set('google_sso_nonce', 'nonce');
+        $session->set('google_sso_code_verifier', 'verifier');
+        $request->setSession($session);
+        $client = $this->client($this->claims(['nonce' => 'nonce']));
+        $client->expects(self::once())
+            ->method('fetchAccessTokenWithAuthCode')
+            ->with('code', 'verifier')
+            ->willReturn(['id_token' => 'test-token'])
+        ;
+
+        $this->runLoginAction($request, $this->claims(), true, $client);
+
+        self::assertFalse($session->has('google_sso_state'));
+        self::assertFalse($session->has('google_sso_nonce'));
+        self::assertFalse($session->has('google_sso_code_verifier'));
+
+        $replay = $this->runLoginAction($request, $this->claims(), false, $client);
+        self::assertInstanceOf(RedirectResponse::class, $replay);
+        self::assertSame('/contao', $replay->getTargetUrl());
+    }
+
     public function testCodeFlowRejectsMissingState(): void
     {
         $request = Request::create('https://example.com/contao/login_sso/redirect?code=abc');
@@ -310,7 +369,7 @@ class LoginControllerTest extends TestCase
     /**
      * @param array<string, mixed> $claims
      */
-    private function runLoginAction(Request $request, array $claims, bool $expectLogin): Response
+    private function runLoginAction(Request $request, array $claims, bool $expectLogin, ?Client $client = null): Response
     {
         $user = $this->createMock(BackendUser::class);
         $user
@@ -324,7 +383,7 @@ class LoginControllerTest extends TestCase
 
         $tokens = new TokenStorage();
         $response = $this->controller($user)->loginAction(
-            $this->client($claims),
+            $client ?? $this->client($claims),
             $request,
             $tokens,
             new EventDispatcher(),
@@ -370,7 +429,7 @@ class LoginControllerTest extends TestCase
     /**
      * @param array<string, mixed> $claims
      */
-    private function client(array $claims): Client
+    private function client(array $claims): Client&MockObject
     {
         $client = $this->createMock(Client::class);
         $client
